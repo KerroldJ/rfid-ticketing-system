@@ -4,11 +4,9 @@
 USER DETAILS:
 
 uname: admin
-
 pass: admin12345
 
 uname: staff
-
 pass: staff12345
 
 ===================================
