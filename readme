@@ -1,0 +1,11 @@
+USER DETAILS
+
+admin
+admin12345
+
+staff
+staff12345
+
+===================================
+
+- pip install django-background-tasks
