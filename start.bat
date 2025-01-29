@@ -1,7 +1,8 @@
 @echo off
 
 :: Set base directory for the project
-set BASE_DIR=%USERPROFILE%\Desktop\rfid-ticketing-system
+set BASE_DIR=%USERPROFILE%\Desktop\Private Files\Coding System Projects\TFCI Ticket System - RFID\rfid-ticketing-system
+
 
 echo Starting Django backend and React frontend in the same CMD window...
 

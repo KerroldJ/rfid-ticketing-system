@@ -1,19 +1,19 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 
-from rest_framework import status
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.contrib.auth import authenticate
 
 from .models import Card, DeactivatedCard, Log
-from .serializers import CardSerializer, DeactivatedCardSerializer, LogSerializer
+from .serializers import CardSerializer, LogSerializer
 from .utils import create_log
 
 from django.db.models.functions import TruncDay
 from django.db.models import Count
 from django.utils import timezone
+from datetime import timedelta
 
 
 #======================================================#
@@ -215,30 +215,47 @@ def reactivate_card(request, card_id):
 @api_view(['GET'])
 def weekly_deactivated_cards(request):
     try:
+        # Get the current date and time in the local timezone
+        local_time = timezone.localtime(timezone.now())
+        
+        # Calculate the start of the week (Monday)
+        start_of_week = local_time - timedelta(days=local_time.weekday())
+        start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate the end of the week (Sunday)
+        end_of_week = start_of_week + timedelta(days=6)
+        end_of_week = end_of_week.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        # Filter logs that are deactivated within the current week
         weekly_data = (
-            Log.objects.filter(status='Deactivated')
+            Log.objects.filter(status='Deactivated', date__range=[start_of_week, end_of_week])
             .annotate(day_of_week=TruncDay('date'))
-            .values('day_of_week')  
+            .values('day_of_week')
             .annotate(count=Count('id'))
             .order_by('day_of_week')
         )
-
-        if not weekly_data:
-            return Response({"labels": [], "data": []})
-        data = [0] * 7  
+        
+        # Initialize data for each day of the week
+        data = [0] * 7
         for item in weekly_data:
             day_of_week = item['day_of_week'].weekday()
             data[day_of_week] += item['count']
-
+        
+        # Labels for the days of the week
         labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        local_time = timezone.localtime(timezone.now())
+        
+        # Get the current day name
         current_day = local_time.strftime('%A')
+        
+        # Prepare the response data
         response_data = {
             "labels": labels,
             "data": data,
             "current_day": current_day,
         }
+        
         return Response(response_data, status=status.HTTP_200_OK)
+    
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 #======================================================#
